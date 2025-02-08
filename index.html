@@ -3,70 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FilmLinkek</title>
+    <title>Filmlinkek</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; background: #222; color: white; }
-        input, button { margin: 5px; padding: 10px; font-size: 18px; }
-        .container { max-width: 600px; margin: auto; }
-        .video-list { list-style: none; padding: 0; }
-        .video-list li { margin: 10px 0; padding: 10px; background: #333; border-radius: 5px; }
-        a { color: #1e90ff; text-decoration: none; }
+        body { font-family: Arial, sans-serif; text-align: center; }
+        ul { list-style: none; padding: 0; }
+        li { margin: 10px 0; }
+        a { text-decoration: none; color: blue; font-size: 18px; }
+        iframe { width: 80%; height: 400px; margin-top: 10px; }
     </style>
 </head>
 <body>
+    <h1>Filmlinkek</h1>
 
-    <h1>FilmLinkek</h1>
+    <form id="add-movie-form">
+        <input type="text" id="movie-title" placeholder="Film címe" required>
+        <input type="url" id="movie-url" placeholder="Videó linkje (Google Drive, YouTube, stb.)" required>
+        <button type="submit">Hozzáadás</button>
+    </form>
 
-    <div class="container">
-        <input type="text" id="videoTitle" placeholder="Film címe">
-        <input type="url" id="videoURL" placeholder="Film linkje">
-        <button onclick="addVideo()">Hozzáadás</button>
-
-        <h2>Feltöltött filmek:</h2>
-        <ul id="videoList" class="video-list"></ul>
-    </div>
+    <ul id="movie-list"></ul>
 
     <script>
-        function addVideo() {
-            let title = document.getElementById("videoTitle").value;
-            let url = document.getElementById("videoURL").value;
+        const movieList = document.getElementById("movie-list");
+        const form = document.getElementById("add-movie-form");
 
-            if (title && url) {
-                let li = document.createElement("li");
-                li.innerHTML = `<a href="${url}" target="_blank">${title}</a> <button onclick="removeVideo(this)">Törlés</button>`;
-                document.getElementById("videoList").appendChild(li);
+        function loadMovies() {
+            const movies = JSON.parse(localStorage.getItem("movies")) || [];
+            movieList.innerHTML = "";
 
-                // Mentés a böngésző tárhelyébe
-                saveVideos();
-            }
-        }
+            movies.forEach((movie, index) => {
+                const li = document.createElement("li");
 
-        function removeVideo(button) {
-            button.parentElement.remove();
-            saveVideos();
-        }
+                // Link a filmhez
+                const link = document.createElement("a");
+                link.href = movie.url;
+                link.textContent = movie.title;
+                link.target = "_blank";
 
-        function saveVideos() {
-            let videos = [];
-            document.querySelectorAll("#videoList li").forEach(li => {
-                let link = li.querySelector("a");
-                videos.push({ title: link.innerText, url: link.href });
+                li.appendChild(link);
+
+                // Ha YouTube vagy Google Drive videó, akkor beágyazás
+                if (movie.url.includes("youtube.com") || movie.url.includes("drive.google.com")) {
+                    const iframe = document.createElement("iframe");
+                    iframe.src = movie.url.replace("/view", "/preview"); 
+                    li.appendChild(iframe);
+                }
+
+                // Törlés gomb
+                const deleteBtn = document.createElement("button");
+                deleteBtn.textContent = "Törlés";
+                deleteBtn.onclick = () => {
+                    movies.splice(index, 1);
+                    localStorage.setItem("movies", JSON.stringify(movies));
+                    loadMovies();
+                };
+
+                li.appendChild(deleteBtn);
+                movieList.appendChild(li);
             });
-            localStorage.setItem("videos", JSON.stringify(videos));
         }
 
-        function loadVideos() {
-            let videos = JSON.parse(localStorage.getItem("videos") || "[]");
-            videos.forEach(video => {
-                let li = document.createElement("li");
-                li.innerHTML = `<a href="${video.url}" target="_blank">${video.title}</a> <button onclick="removeVideo(this)">Törlés</button>`;
-                document.getElementById("videoList").appendChild(li);
-            });
-        }
+        form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            const title = document.getElementById("movie-title").value;
+            const url = document.getElementById("movie-url").value;
 
-        // Betöltéskor hívódik meg
-        loadVideos();
+            const movies = JSON.parse(localStorage.getItem("movies")) || [];
+            movies.push({ title, url });
+            localStorage.setItem("movies", JSON.stringify(movies));
+
+            form.reset();
+            loadMovies();
+        });
+
+        loadMovies();
     </script>
-
 </body>
 </html>
